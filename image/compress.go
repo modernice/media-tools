@@ -22,3 +22,16 @@ func Compress(compressor CompressionFunc) *Compressor {
 func (c *Compressor) Compress(img image.Image) (*image.NRGBA, error) {
 	return c.compressor(img)
 }
+
+func (c *Compressor) Process(ctx ProcessorContext) ([]*image.NRGBA, error) {
+	if ctx.Original() {
+		return []*image.NRGBA{ctx.Image()}, nil
+	}
+
+	compressed, err := c.Compress(ctx.Image())
+	if err != nil {
+		return nil, err
+	}
+
+	return []*image.NRGBA{compressed}, nil
+}

@@ -51,3 +51,11 @@ func (r *Resizer) Resize(img image.Image) ([]*image.NRGBA, error) {
 func (r *Resizer) resize(img image.Image, dim Dimensions) *image.NRGBA {
 	return imaging.Resize(img, dim.Width(), dim.Height(), r.filter)
 }
+
+func (r *Resizer) Process(ctx ProcessorContext) ([]*image.NRGBA, error) {
+	resized, err := r.Resize(ctx.Image())
+	if err != nil {
+		return nil, err
+	}
+	return append([]*image.NRGBA{ctx.Image()}, resized...), nil
+}
