@@ -1,6 +1,8 @@
 package image
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Dimensions are the width and height of an image, in pixels.
 type Dimensions [2]int
