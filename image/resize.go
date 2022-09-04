@@ -8,8 +8,15 @@ import (
 
 // Resizer resizes images to a set of dimensions.
 type Resizer struct {
-	dimensions []Dimensions
-	filter     imaging.ResampleFilter
+	dimensions      []Dimensions
+	filter          imaging.ResampleFilter
+	discardOriginal bool
+}
+
+// DimensionProvider provides image dimensions to Resizer. DimensionProvider is
+// implemented by [DimensionList] and [DimensionMap].
+type DimensionProvider interface {
+	Dimensions() []Dimensions
 }
 
 // ResizerOption is an option for a Resizer.
@@ -23,10 +30,12 @@ func ResampleFilter(filter imaging.ResampleFilter) ResizerOption {
 	}
 }
 
-// DimensionProvider provides image dimensions to Resizer. DimensionProvider is
-// implemented by [DimensionList] and [DimensionMap].
-type DimensionProvider interface {
-	Dimensions() []Dimensions
+// DiscardOriginal returns a ResizerOption that discards the original image when
+// executed in a [Pipeline].
+func DiscardOriginal(v bool) ResizerOption {
+	return func(r *Resizer) {
+		r.discardOriginal = v
+	}
 }
 
 // Resize returns a Resizer that resizes images to the given dimensions.
@@ -39,7 +48,8 @@ func Resize(dimensions DimensionProvider, opts ...ResizerOption) *Resizer {
 	return r
 }
 
-// Resize resizes an image to the configured dimensinos.
+// Resize resizes an image to the configured dimensinos. The input image is not
+// returned in the result.
 func (r *Resizer) Resize(img image.Image) ([]*image.NRGBA, error) {
 	resized := make([]*image.NRGBA, len(r.dimensions))
 	for i, dim := range r.dimensions {
@@ -52,10 +62,17 @@ func (r *Resizer) resize(img image.Image, dim Dimensions) *image.NRGBA {
 	return imaging.Resize(img, dim.Width(), dim.Height(), r.filter)
 }
 
+// Process implements [Processor]. The input image is returned in the result as
+// the first element.
 func (r *Resizer) Process(ctx ProcessorContext) ([]*image.NRGBA, error) {
 	resized, err := r.Resize(ctx.Image())
 	if err != nil {
 		return nil, err
 	}
+
+	if r.discardOriginal {
+		return resized, nil
+	}
+
 	return append([]*image.NRGBA{ctx.Image()}, resized...), nil
 }

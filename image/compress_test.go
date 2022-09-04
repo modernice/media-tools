@@ -2,6 +2,7 @@ package image_test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	stdimage "image"
 	"image/jpeg"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/modernice/media-tools/image"
 	"github.com/modernice/media-tools/image/compressor"
+	"github.com/modernice/media-tools/image/internal"
 )
 
 func TestCompressor_Compress(t *testing.T) {
@@ -39,6 +41,64 @@ func TestCompressor_Compress(t *testing.T) {
 			bounds := img.Bounds()
 			saveCompressed(t, quality, image.Dimensions{bounds.Dx(), bounds.Dy()}, compressed)
 		})
+	}
+}
+
+func TestCompressor_Process_original(t *testing.T) {
+	compressor := image.Compress(compressor.JPEG(50))
+
+	original := newExample()
+	ctx := image.NewProcessorContext(context.Background(), original, true)
+
+	compressed, err := compressor.Process(ctx)
+	if err != nil {
+		t.Fatalf("run processor: %v", err)
+	}
+
+	if len(compressed) != 1 {
+		t.Fatalf("expected 1 compressed image; got %d", len(compressed))
+	}
+
+	orgSize, err := internal.SizeOf(original)
+	if err != nil {
+		t.Fatalf("get original size: %v", err)
+	}
+	compressedSize, err := internal.SizeOf(compressed[0])
+	if err != nil {
+		t.Fatalf("get compressed size: %v", err)
+	}
+
+	if orgSize != compressedSize {
+		t.Fatalf("original image should not be compressed")
+	}
+}
+
+func TestCompressor_Process_CompressOriginal(t *testing.T) {
+	compressor := image.Compress(compressor.JPEG(50), image.CompressOriginal(true))
+
+	original := newExample()
+	ctx := image.NewProcessorContext(context.Background(), original, true)
+
+	compressed, err := compressor.Process(ctx)
+	if err != nil {
+		t.Fatalf("run processor: %v", err)
+	}
+
+	if len(compressed) != 1 {
+		t.Fatalf("expected 1 compressed image; got %d", len(compressed))
+	}
+
+	orgSize, err := internal.SizeOf(original)
+	if err != nil {
+		t.Fatalf("get original size: %v", err)
+	}
+	compressedSize, err := internal.SizeOf(compressed[0])
+	if err != nil {
+		t.Fatalf("get compressed size: %v", err)
+	}
+
+	if orgSize == compressedSize {
+		t.Fatalf("original image should be compressed when providing the CompressOriginal(true) option")
 	}
 }
 

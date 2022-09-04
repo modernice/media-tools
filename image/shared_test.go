@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/modernice/media-tools/image"
+	"github.com/modernice/media-tools/image/internal"
 )
 
 //go:embed testdata/example.jpg
@@ -17,12 +18,12 @@ var example []byte
 
 var wd, _ = os.Getwd()
 
-func newExample() stdimage.Image {
+func newExample() *stdimage.NRGBA {
 	img, err := jpeg.Decode(bytes.NewReader(example))
 	if err != nil {
 		panic(err)
 	}
-	return img
+	return internal.ToNRGBA(img)
 }
 
 func saveOutImage(t *testing.T, name string, dim image.Dimensions, img *stdimage.NRGBA) {

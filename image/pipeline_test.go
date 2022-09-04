@@ -2,13 +2,12 @@ package image_test
 
 import (
 	"context"
-	stdimage "image"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/modernice/media-tools/image"
 	"github.com/modernice/media-tools/image/compressor"
-	"github.com/vitali-fedulov/images4"
+	"github.com/modernice/media-tools/image/internal"
 )
 
 func TestPipeline(t *testing.T) {
@@ -37,13 +36,7 @@ func TestPipeline(t *testing.T) {
 		}
 	}
 
-	if !equalImages(original, result.Images[0].Image) {
+	if !internal.SameImages(original, result.Images[0].Image) {
 		t.Fatalf("first image should be the original\n%s", cmp.Diff(original, result.Images[0].Image))
 	}
-}
-
-func equalImages(a, b stdimage.Image) bool {
-	iconA := images4.Icon(a)
-	iconB := images4.Icon(b)
-	return images4.Similar(iconA, iconB)
 }

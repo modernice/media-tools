@@ -45,6 +45,15 @@ type ProcessorContext interface {
 	Original() bool
 }
 
+// NewProcessorContext returns a new [ProcessorContext] for a [Processor].
+func NewProcessorContext(ctx context.Context, img *image.NRGBA, original bool) ProcessorContext {
+	return &processorContext{
+		Context:  ctx,
+		image:    img,
+		original: original,
+	}
+}
+
 type processorContext struct {
 	context.Context
 
@@ -73,17 +82,14 @@ func (pipeline Pipeline) Run(ctx context.Context, img image.Image) (PipelineResu
 
 	previous := []*image.NRGBA{nimg}
 
-	for _, processor := range pipeline {
+	for i, processor := range pipeline {
 		_previous := previous
 		previous = previous[:0]
 
 		for _, img := range _previous {
-			pctx := processorContext{
-				Context: ctx,
-				image:   img,
-			}
+			pctx := NewProcessorContext(ctx, img, i == 0)
 
-			processed, err := processor.Process(&pctx)
+			processed, err := processor.Process(pctx)
 			if err != nil {
 				return PipelineResult{}, fmt.Errorf("%T processor: %w", processor, err)
 			}
