@@ -160,12 +160,20 @@ func (result PipelineResult) Original() (Processed, bool) {
 	return Processed{}, false
 }
 
-// Find returns the processed images that gave the given tag.
-func (result PipelineResult) Find(tag string) []Processed {
+// Find returns the processed images that have at least 1 of the given tags.
+// If no tags are provided, nil is returned.
+func (result PipelineResult) Find(tags ...string) []Processed {
+	if len(tags) == 0 {
+		return nil
+	}
+
 	var out []Processed
 	for _, img := range result.Images {
-		if img.Tags.Contains(tag) {
-			out = append(out, img)
+		for _, tag := range tags {
+			if img.Tags.Contains(tag) {
+				out = append(out, img)
+				break
+			}
 		}
 	}
 	return out
