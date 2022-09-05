@@ -2,6 +2,7 @@ package image_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -14,6 +15,14 @@ func TestPipeline_Run(t *testing.T) {
 	pipe := image.Pipeline{
 		image.Resize(image.DimensionMap{"sm": {360}, "md": {640}, "lg": {960}}),
 		image.Compress(compression.JPEG(75)),
+		image.Tag(image.NewTags("foo", "bar")),
+		image.TagBy(func(p image.Processed) image.Tags {
+			suffix := "non-original"
+			if p.Original {
+				suffix = "original"
+			}
+			return image.NewTags(fmt.Sprintf("tagby:%s", suffix))
+		}),
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -34,8 +43,8 @@ func TestPipeline_Run(t *testing.T) {
 		t.Fatalf("first image should be the original\n%s", cmp.Diff(original, result.Images[0].Image))
 	}
 
-	if len(result.Images[0].Tags) != 1 {
-		t.Fatalf("original image should have exactly 1 tag; has %d", len(result.Images[0].Tags))
+	if len(result.Images[0].Tags) != 4 {
+		t.Fatalf("original image should have exactly 4 tags; has %d", len(result.Images[0].Tags))
 	}
 
 	if !result.Images[0].Original {
@@ -76,6 +85,24 @@ func TestPipeline_Run(t *testing.T) {
 
 	if !result.Images[3].Tags.Contains("compressor=jpeg,quality=75") {
 		t.Fatalf("last image should have tag %q", "compressor=jpeg,quality=75")
+	}
+
+	for _, img := range result.Images {
+		if !img.Tags.Contains("foo") {
+			t.Fatalf("all images should have tag %q", "foo")
+		}
+
+		if !img.Tags.Contains("bar") {
+			t.Fatalf("all images should have tag %q", "bar")
+		}
+
+		if img.Original && !img.Tags.Contains("tagby:original") {
+			t.Fatalf("original image should have tag %q", "tagby:original")
+		}
+
+		if !img.Original && !img.Tags.Contains("tagby:non-original") {
+			t.Fatalf("non-original image should have tag %q", "tagby:non-original")
+		}
 	}
 }
 
