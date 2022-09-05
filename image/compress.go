@@ -2,6 +2,8 @@ package image
 
 import (
 	"image"
+	"strconv"
+	"strings"
 
 	"github.com/modernice/media-tools/image/internal"
 )
@@ -111,4 +113,55 @@ func (c *Compressor) Process(ctx ProcessorContext) ([]Processed, error) {
 	}
 
 	return out, nil
+}
+
+// CompressionName extracts the name of the [Compression] from the tags of a
+// processed image.
+func CompressionName(tags Tags) string {
+	if !tags.Contains(Compressed) {
+		return ""
+	}
+
+	for _, tag := range tags {
+		if !strings.HasPrefix(tag, "compression=") {
+			continue
+		}
+
+		parts := strings.Split(tag, ",")
+		compressionTag := parts[0]
+
+		return compressionTag[12:]
+	}
+
+	return ""
+}
+
+// CompressionQuality extracts the name of the compression quality from the tags
+// of a processed image. If the tags to not provide the compression quality, -1
+// is returned.
+func CompressionQuality(tags Tags) int {
+	if !tags.Contains(Compressed) {
+		return -1
+	}
+
+	for _, tag := range tags {
+		if !strings.HasPrefix(tag, "compression=") {
+			continue
+		}
+
+		parts := strings.Split(tag, ",")
+		if len(parts) < 2 {
+			return -1
+		}
+
+		rawQuality := parts[1]
+		quality, err := strconv.Atoi(rawQuality[8:])
+		if err != nil {
+			return -1
+		}
+
+		return quality
+	}
+
+	return -1
 }

@@ -3,6 +3,7 @@ package image
 import (
 	"fmt"
 	"image"
+	"strings"
 
 	"github.com/disintegration/imaging"
 	"github.com/modernice/media-tools/internal/slices"
@@ -131,4 +132,14 @@ func (r *Resizer) Process(ctx ProcessorContext) ([]Processed, error) {
 	}
 
 	return append([]Processed{ctx.Image()}, processed...), nil
+}
+
+// DimensionName extracts the dimension name from the tags of a processed image.
+func DimensionName(tags Tags) string {
+	for _, tag := range tags {
+		if strings.HasPrefix(tag, "size=") {
+			return tag[5:]
+		}
+	}
+	return ""
 }

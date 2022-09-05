@@ -74,6 +74,14 @@ func TestPipeline_Run(t *testing.T) {
 		t.Fatalf("second image should have tag %q", "compression=jpeg,quality=75")
 	}
 
+	if image.CompressionName(result.Images[1].Tags) != "jpeg" {
+		t.Fatalf("second image should have compression tag %q", "jpeg")
+	}
+
+	if image.CompressionQuality(result.Images[1].Tags) != 75 {
+		t.Fatalf("second image should have compression quality %d", 75)
+	}
+
 	lastIdx := len(result.Images) - 1
 	secondLastIdx := len(result.Images) - 2
 
@@ -107,6 +115,14 @@ func TestPipeline_Run(t *testing.T) {
 
 	if !result.Images[lastIdx].Tags.Contains("compression=jpeg,quality=50") {
 		t.Fatalf("last image should have tag %q", "compression=jpeg,quality=50")
+	}
+
+	if image.CompressionName(result.Images[lastIdx].Tags) != "jpeg" {
+		t.Fatalf("last image should have compression tag %q", "jpeg")
+	}
+
+	if image.CompressionQuality(result.Images[lastIdx].Tags) != 50 {
+		t.Fatalf("last image should have compression quality %d", 50)
 	}
 
 	for _, img := range result.Images {

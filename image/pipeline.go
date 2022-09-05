@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"image"
-	"strings"
+	"regexp"
 
 	"github.com/modernice/media-tools/internal/slices"
 )
@@ -62,6 +62,9 @@ func (ctx *processorContext) Image() Processed {
 type PipelineResult struct {
 	// Images are the processed images.
 	Images []Processed
+
+	// Input is the original image that was passed to the [Pipeline].
+	Input image.Image
 }
 
 // Tags is a list of tags that Processors assigned to images in a [Pipeline].
@@ -70,6 +73,17 @@ type Tags []string
 // NewTags returns the given tags as [Tags]. Duplicates are removed.
 func NewTags(tags ...string) Tags {
 	return slices.Unique(Tags(tags))
+}
+
+// Match returns the tags that match the given regular expression.
+func (tags Tags) Match(re *regexp.Regexp) []string {
+	var out []string
+	for _, tag := range tags {
+		if re.MatchString(tag) {
+			out = append(out, tag)
+		}
+	}
+	return out
 }
 
 // Contains returns whether a tag is contained within tags.
@@ -97,7 +111,7 @@ func (tags Tags) Without(remove ...string) Tags {
 // Run runs the pipeline on an image and returns the [PipelineResult],
 // containing the processed images.
 func (pipeline Pipeline) Run(ctx context.Context, img image.Image) (PipelineResult, error) {
-	previous := []Processed{{Image: img, Original: true, Tags: NewTags(Original)}}
+	previous := []Processed{{Image: img, Tags: NewTags(Original), Original: true}}
 
 	for _, processor := range pipeline {
 		_previous := previous
@@ -126,15 +140,46 @@ func (pipeline Pipeline) Run(ctx context.Context, img image.Image) (PipelineResu
 		}
 	}
 
-	return PipelineResult{Images: previous}, nil
+	return PipelineResult{
+		Images: previous,
+		Input:  img,
+	}, nil
 }
 
-// DimensionName extracts the dimension name from the tags of a processed image.
-func DimensionName(tags Tags) string {
-	for _, tag := range tags {
-		if strings.HasPrefix(tag, "size=") {
-			return tag[5:]
+// Original returns the processed image that is tagged as the original image.
+// Depending on the [Pipeline], the original image may have been transformed
+// by one or more [Processor]s. [PipelineResult.Input] is the actual image that
+// was passed to [Pipeline.Run].
+//
+// If the [Pipeline] discarded the original image from its result, false is returned.
+func (result PipelineResult) Original() (Processed, bool) {
+	images := result.Find(Original)
+	if len(images) > 0 {
+		return images[0], true
+	}
+	return Processed{}, false
+}
+
+// Find returns the processed images that gave the given tag.
+func (result PipelineResult) Find(tag string) []Processed {
+	var out []Processed
+	for _, img := range result.Images {
+		if img.Tags.Contains(tag) {
+			out = append(out, img)
 		}
 	}
-	return ""
+	return out
+}
+
+// Match returns the processed images that have at least 1 tag that matches the
+// given regular expression.
+func (result PipelineResult) Match(re *regexp.Regexp) []Processed {
+	var out []Processed
+	for _, img := range result.Images {
+		matched := img.Tags.Match(re)
+		if len(matched) > 0 {
+			out = append(out, img)
+		}
+	}
+	return out
 }
