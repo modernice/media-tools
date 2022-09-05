@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/modernice/media-tools/image"
-	"github.com/modernice/media-tools/image/compressor"
+	"github.com/modernice/media-tools/image/compression"
 	"github.com/modernice/media-tools/image/internal"
 )
 
@@ -18,7 +18,7 @@ func TestCompressor_Compress(t *testing.T) {
 
 	for _, quality := range qualities {
 		t.Run(fmt.Sprintf("quality=%d", quality), func(t *testing.T) {
-			compressor := image.Compress(compressor.JPEG(quality))
+			compressor := image.Compress(compression.JPEG(quality))
 
 			img := newExample()
 
@@ -44,7 +44,7 @@ func TestCompressor_Compress(t *testing.T) {
 }
 
 func TestCompressor_Process_original(t *testing.T) {
-	compressor := image.Compress(compressor.JPEG(50))
+	compressor := image.Compress(compression.JPEG(50))
 
 	original := newExample()
 	ctx := image.NewProcessorContext(context.Background(), image.Processed{Image: original, Original: true})
@@ -73,7 +73,7 @@ func TestCompressor_Process_original(t *testing.T) {
 }
 
 func TestCompressor_Process_CompressOriginal(t *testing.T) {
-	compressor := image.Compress(compressor.JPEG(50), image.CompressOriginal(true))
+	compressor := image.Compress(compression.JPEG(50), image.CompressOriginal(true))
 
 	original := newExample()
 	ctx := image.NewProcessorContext(context.Background(), image.Processed{Image: original, Original: true})

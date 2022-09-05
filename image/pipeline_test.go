@@ -6,14 +6,14 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/modernice/media-tools/image"
-	"github.com/modernice/media-tools/image/compressor"
+	"github.com/modernice/media-tools/image/compression"
 	"github.com/modernice/media-tools/image/internal"
 )
 
 func TestPipeline_Run(t *testing.T) {
 	pipe := image.Pipeline{
 		image.Resize(image.DimensionMap{"sm": {360}, "md": {640}, "lg": {960}}),
-		image.Compress(compressor.JPEG(75)),
+		image.Compress(compression.JPEG(75)),
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -82,7 +82,7 @@ func TestPipeline_Run(t *testing.T) {
 func TestPipeline_Run_CompressOriginal(t *testing.T) {
 	pipe := image.Pipeline{
 		image.Resize(image.DimensionMap{"sm": {360}, "md": {640}, "lg": {960}}),
-		image.Compress(compressor.JPEG(75), image.CompressOriginal(true)),
+		image.Compress(compression.JPEG(75), image.CompressOriginal(true)),
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -111,7 +111,7 @@ func TestPipeline_Run_CompressOriginal(t *testing.T) {
 func TestPipeline_Run_ResizeDiscardInput(t *testing.T) {
 	pipe := image.Pipeline{
 		image.Resize(image.DimensionMap{"sm": {360}, "md": {640}, "lg": {960}}, image.DiscardInput(true)),
-		image.Compress(compressor.JPEG(75)),
+		image.Compress(compression.JPEG(75)),
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
