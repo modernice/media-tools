@@ -40,3 +40,13 @@ func (dm DimensionMap) Dimensions() []Dimensions {
 	}
 	return dims
 }
+
+// Tag returns the configured tag for the given [Dimensions].
+func (dm DimensionMap) Tag(dim Dimensions) string {
+	for tag, d := range dm {
+		if d == dim {
+			return tag
+		}
+	}
+	return ""
+}

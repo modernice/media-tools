@@ -6,16 +6,34 @@ import (
 	"github.com/modernice/media-tools/image/internal"
 )
 
+var _ Processor = (*Compressor)(nil)
+
+const (
+	// Compressed is the tag that is assigned to compressed images.
+	Compressed = "compressed"
+
+	// AnonymousCompression is the name [Compression.Name] of a CompressionFunc.
+	AnonymousCompression = "anonymous"
+)
+
 // Compressor compresses images.
 type Compressor struct {
-	compressor       CompressionFunc
+	compression      Compression
 	compressOriginal bool
 }
 
-// CompressionFunc is the actual implementation of a compressor.
-// Available implementations:
-//   - [github.com/modernice/media-tools/image/compressor.JPEG]
+// Compression provides the actual implementation for compressing images.
+type Compression interface {
+	// Compress compresses an image.
+	Compress(img image.Image) (image.Image, error)
+}
+
+// CompressionFunc allow a function to be used as a [Compression].
 type CompressionFunc func(image.Image) (image.Image, error)
+
+func (fn CompressionFunc) Compress(img image.Image) (image.Image, error) {
+	return fn(img)
+}
 
 // CompressorOption is an option for a [*Compressor].
 type CompressorOption func(*Compressor)
@@ -31,9 +49,11 @@ func CompressOriginal(v bool) CompressorOption {
 }
 
 // Compress returns a [*Compressor] that compresses images using the provided
-// [CompressionFunc].
-func Compress(compressor CompressionFunc, opts ...CompressorOption) *Compressor {
-	c := &Compressor{compressor: compressor}
+// [CompressionFunc]. If the provided [Compression] method has a `Tags() Tags`
+// method, the returned [*Compressor] will append these tags to compressed images
+// when calling [*Compressor.Process].
+func Compress(compression Compression, opts ...CompressorOption) *Compressor {
+	c := &Compressor{compression: compression}
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -42,7 +62,7 @@ func Compress(compressor CompressionFunc, opts ...CompressorOption) *Compressor 
 
 // Compress compresses an image using the configured [CompressionFunc].
 func (c *Compressor) Compress(img image.Image) (image.Image, error) {
-	compressed, err := c.compressor(img)
+	compressed, err := c.compression.Compress(img)
 	if err != nil {
 		return nil, err
 	}
@@ -52,15 +72,26 @@ func (c *Compressor) Compress(img image.Image) (image.Image, error) {
 // Process implements [Processor]. By default, the original image will not be
 // compressed and returned as is to preserve quality. To also compress the
 // original image, pass the [CompressOriginal] option to [Compress].
-func (c *Compressor) Process(ctx ProcessorContext) ([]image.Image, error) {
-	if !c.compressOriginal && ctx.Original() {
-		return []image.Image{ctx.Image()}, nil
+func (c *Compressor) Process(ctx ProcessorContext) ([]Processed, error) {
+	pimg := ctx.Image()
+
+	if !c.compressOriginal && pimg.Original {
+		return []Processed{pimg}, nil
 	}
 
-	compressed, err := c.Compress(ctx.Image())
+	compressed, err := c.Compress(ctx.Image().Image)
 	if err != nil {
 		return nil, err
 	}
 
-	return []image.Image{compressed}, nil
+	var compressionTags Tags
+	if tagger, isTagger := c.compression.(interface{ Tags() Tags }); isTagger {
+		compressionTags = tagger.Tags()
+	}
+
+	return []Processed{{
+		Image:    compressed,
+		Tags:     pimg.Tags.With(Compressed).With(compressionTags...),
+		Original: pimg.Original,
+	}}, nil
 }

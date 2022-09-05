@@ -10,21 +10,31 @@ import (
 	"github.com/modernice/media-tools/image/internal"
 )
 
-// JPEG returns an [image.CompressionFunc] that compresses images using the JPEG
+// JPEG retrurns an [image.Compression] that compresses images using the JPEG
 // encoder's "quality" option.
-func JPEG(quality int) image.CompressionFunc {
-	return func(img stdimage.Image) (stdimage.Image, error) {
-		var buf bytes.Buffer
+func JPEG(quality int) image.Compression {
+	return &jpegCompression{quality: quality}
+}
 
-		if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality}); err != nil {
-			return nil, fmt.Errorf("encode JPEG: %w", err)
-		}
+type jpegCompression struct{ quality int }
 
-		decoded, err := jpeg.Decode(&buf)
-		if err != nil {
-			return nil, fmt.Errorf("decode JPEG: %w", err)
-		}
+func (jc *jpegCompression) Compress(img stdimage.Image) (stdimage.Image, error) {
+	var buf bytes.Buffer
 
-		return internal.ToNRGBA(decoded), nil
+	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: jc.quality}); err != nil {
+		return nil, fmt.Errorf("encode as JPEG: %w", err)
 	}
+
+	decoded, err := jpeg.Decode(&buf)
+	if err != nil {
+		return nil, fmt.Errorf("decode JPEG: %w", err)
+	}
+
+	return internal.ToNRGBA(decoded), nil
+}
+
+// Tags returns the tags that should be assigned to images that are compressed
+// by the JPEG compression.
+func (jc *jpegCompression) Tags() image.Tags {
+	return image.NewTags(fmt.Sprintf("compressor=jpeg,quality=%d", jc.quality))
 }

@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/modernice/media-tools/image"
 	"github.com/modernice/media-tools/image/internal"
 )
 
@@ -26,7 +25,7 @@ func newExample() *stdimage.NRGBA {
 	return internal.ToNRGBA(img)
 }
 
-func saveOutImage(t *testing.T, name string, dim image.Dimensions, img stdimage.Image) {
+func saveOutImage(t *testing.T, name string, img stdimage.Image) {
 	prepareOutputDir(t)
 
 	path := filepath.Join(wd, "testoutput", name)

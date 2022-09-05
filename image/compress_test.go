@@ -38,8 +38,7 @@ func TestCompressor_Compress(t *testing.T) {
 				t.Fatalf("compressed image should be smaller than original; original=%d; compressed=%d", orgSize, compressedSize)
 			}
 
-			bounds := img.Bounds()
-			saveCompressed(t, quality, image.Dimensions{bounds.Dx(), bounds.Dy()}, compressed)
+			saveCompressed(t, quality, compressed)
 		})
 	}
 }
@@ -48,7 +47,7 @@ func TestCompressor_Process_original(t *testing.T) {
 	compressor := image.Compress(compressor.JPEG(50))
 
 	original := newExample()
-	ctx := image.NewProcessorContext(context.Background(), original, true)
+	ctx := image.NewProcessorContext(context.Background(), image.Processed{Image: original, Original: true})
 
 	compressed, err := compressor.Process(ctx)
 	if err != nil {
@@ -63,7 +62,7 @@ func TestCompressor_Process_original(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get original size: %v", err)
 	}
-	compressedSize, err := internal.SizeOf(compressed[0])
+	compressedSize, err := internal.SizeOf(compressed[0].Image)
 	if err != nil {
 		t.Fatalf("get compressed size: %v", err)
 	}
@@ -77,7 +76,7 @@ func TestCompressor_Process_CompressOriginal(t *testing.T) {
 	compressor := image.Compress(compressor.JPEG(50), image.CompressOriginal(true))
 
 	original := newExample()
-	ctx := image.NewProcessorContext(context.Background(), original, true)
+	ctx := image.NewProcessorContext(context.Background(), image.Processed{Image: original, Original: true})
 
 	compressed, err := compressor.Process(ctx)
 	if err != nil {
@@ -92,7 +91,7 @@ func TestCompressor_Process_CompressOriginal(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get original size: %v", err)
 	}
-	compressedSize, err := internal.SizeOf(compressed[0])
+	compressedSize, err := internal.SizeOf(compressed[0].Image)
 	if err != nil {
 		t.Fatalf("get compressed size: %v", err)
 	}
@@ -110,6 +109,6 @@ func getImageSize(t *testing.T, img stdimage.Image) int {
 	return buf.Len()
 }
 
-func saveCompressed(t *testing.T, quality int, dim image.Dimensions, img stdimage.Image) {
-	saveOutImage(t, fmt.Sprintf("compressed-%dx%d-%d.jpg", dim.Width(), dim.Height(), quality), dim, img)
+func saveCompressed(t *testing.T, quality int, img stdimage.Image) {
+	saveOutImage(t, fmt.Sprintf("compressed-%d.jpg", quality), img)
 }
