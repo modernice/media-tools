@@ -50,21 +50,21 @@ func Resize(dimensions DimensionProvider, opts ...ResizerOption) *Resizer {
 
 // Resize resizes an image to the configured dimensinos. The input image is not
 // returned in the result.
-func (r *Resizer) Resize(img image.Image) ([]*image.NRGBA, error) {
-	resized := make([]*image.NRGBA, len(r.dimensions))
+func (r *Resizer) Resize(img image.Image) ([]image.Image, error) {
+	resized := make([]image.Image, len(r.dimensions))
 	for i, dim := range r.dimensions {
 		resized[i] = r.resize(img, dim)
 	}
 	return resized, nil
 }
 
-func (r *Resizer) resize(img image.Image, dim Dimensions) *image.NRGBA {
+func (r *Resizer) resize(img image.Image, dim Dimensions) image.Image {
 	return imaging.Resize(img, dim.Width(), dim.Height(), r.filter)
 }
 
 // Process implements [Processor]. The input image is returned in the result as
 // the first element.
-func (r *Resizer) Process(ctx ProcessorContext) ([]*image.NRGBA, error) {
+func (r *Resizer) Process(ctx ProcessorContext) ([]image.Image, error) {
 	resized, err := r.Resize(ctx.Image())
 	if err != nil {
 		return nil, err
@@ -74,5 +74,5 @@ func (r *Resizer) Process(ctx ProcessorContext) ([]*image.NRGBA, error) {
 		return resized, nil
 	}
 
-	return append([]*image.NRGBA{ctx.Image()}, resized...), nil
+	return append([]image.Image{ctx.Image()}, resized...), nil
 }

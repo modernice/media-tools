@@ -110,6 +110,6 @@ func getImageSize(t *testing.T, img stdimage.Image) int {
 	return buf.Len()
 }
 
-func saveCompressed(t *testing.T, quality int, dim image.Dimensions, img *stdimage.NRGBA) {
+func saveCompressed(t *testing.T, quality int, dim image.Dimensions, img stdimage.Image) {
 	saveOutImage(t, fmt.Sprintf("compressed-%dx%d-%d.jpg", dim.Width(), dim.Height(), quality), dim, img)
 }

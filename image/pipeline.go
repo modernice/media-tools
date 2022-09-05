@@ -6,7 +6,6 @@ import (
 	"image"
 
 	"github.com/jaevor/go-nanoid"
-	"github.com/modernice/media-tools/image/internal"
 	"github.com/modernice/media-tools/internal/slices"
 )
 
@@ -25,12 +24,12 @@ type Pipeline []Processor
 // Processed is a processed image.
 type Processed struct {
 	ID    string
-	Image *image.NRGBA
+	Image image.Image
 }
 
 // A Processor processes an image and returns possibly multiple processed images.
 type Processor interface {
-	Process(ProcessorContext) ([]*image.NRGBA, error)
+	Process(ProcessorContext) ([]image.Image, error)
 }
 
 // ProcessorContext is passed to Processors.
@@ -38,7 +37,7 @@ type ProcessorContext interface {
 	context.Context
 
 	// Image is the input input for the processor.
-	Image() *image.NRGBA
+	Image() image.Image
 
 	// Original returns whether the image is the original image that was
 	// provided to [Pipeline.Run].
@@ -46,7 +45,7 @@ type ProcessorContext interface {
 }
 
 // NewProcessorContext returns a new [ProcessorContext] for a [Processor].
-func NewProcessorContext(ctx context.Context, img *image.NRGBA, original bool) ProcessorContext {
+func NewProcessorContext(ctx context.Context, img image.Image, original bool) ProcessorContext {
 	return &processorContext{
 		Context:  ctx,
 		image:    img,
@@ -57,11 +56,11 @@ func NewProcessorContext(ctx context.Context, img *image.NRGBA, original bool) P
 type processorContext struct {
 	context.Context
 
-	image    *image.NRGBA
+	image    image.Image
 	original bool
 }
 
-func (ctx *processorContext) Image() *image.NRGBA {
+func (ctx *processorContext) Image() image.Image {
 	return ctx.image
 }
 
@@ -78,9 +77,7 @@ type PipelineResult struct {
 // Run runs the pipeline on an image and returns the [PipelineResult],
 // containing the processed images.
 func (pipeline Pipeline) Run(ctx context.Context, img image.Image) (PipelineResult, error) {
-	nimg := internal.ToNRGBA(img)
-
-	previous := []*image.NRGBA{nimg}
+	previous := []image.Image{img}
 
 	for i, processor := range pipeline {
 		_previous := previous
@@ -98,7 +95,7 @@ func (pipeline Pipeline) Run(ctx context.Context, img image.Image) (PipelineResu
 		}
 	}
 
-	processed := slices.Map(func(img *image.NRGBA) Processed {
+	processed := slices.Map(func(img image.Image) Processed {
 		return Processed{
 			ID:    newID(),
 			Image: img,

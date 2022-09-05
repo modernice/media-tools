@@ -93,6 +93,6 @@ func TestResizer_Process_DiscardOriginal(t *testing.T) {
 	}
 }
 
-func saveResized(t *testing.T, dim image.Dimensions, img *stdimage.NRGBA) {
+func saveResized(t *testing.T, dim image.Dimensions, img stdimage.Image) {
 	saveOutImage(t, fmt.Sprintf("resized-%dx%d.jpg", dim.Width(), dim.Height()), dim, img)
 }

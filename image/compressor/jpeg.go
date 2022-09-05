@@ -13,7 +13,7 @@ import (
 // JPEG returns an [image.CompressionFunc] that compresses images using the JPEG
 // encoder's "quality" option.
 func JPEG(quality int) image.CompressionFunc {
-	return func(img stdimage.Image) (*stdimage.NRGBA, error) {
+	return func(img stdimage.Image) (stdimage.Image, error) {
 		var buf bytes.Buffer
 
 		if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality}); err != nil {
