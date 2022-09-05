@@ -27,18 +27,20 @@ func TestCompressor_Compress(t *testing.T) {
 				t.Fatalf("compress image: %v", err)
 			}
 
-			if compressed.Bounds() != img.Bounds() {
-				t.Fatalf("compressed image has wrong bounds; want %v; got %v", img.Bounds(), compressed.Bounds())
+			for _, cimg := range compressed {
+				if cimg.Bounds() != img.Bounds() {
+					t.Fatalf("compressed image has wrong bounds; want %v; got %v", img.Bounds(), cimg.Bounds())
+				}
+
+				orgSize := getImageSize(t, img)
+				compressedSize := getImageSize(t, cimg)
+
+				if quality < 100 && compressedSize >= orgSize {
+					t.Fatalf("compressed image should be smaller than original; original=%d; compressed=%d", orgSize, compressedSize)
+				}
+
+				saveCompressed(t, quality, cimg)
 			}
-
-			orgSize := getImageSize(t, img)
-			compressedSize := getImageSize(t, compressed)
-
-			if quality < 100 && compressedSize >= orgSize {
-				t.Fatalf("compressed image should be smaller than original; original=%d; compressed=%d", orgSize, compressedSize)
-			}
-
-			saveCompressed(t, quality, compressed)
 		})
 	}
 }

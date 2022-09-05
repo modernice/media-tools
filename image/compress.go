@@ -18,7 +18,7 @@ const (
 
 // Compressor compresses images.
 type Compressor struct {
-	compression      Compression
+	compressions     []Compression
 	compressOriginal bool
 }
 
@@ -49,24 +49,36 @@ func CompressOriginal(v bool) CompressorOption {
 }
 
 // Compress returns a [*Compressor] that compresses images using the provided
-// [CompressionFunc]. If the provided [Compression] method has a `Tags() Tags`
-// method, the returned [*Compressor] will append these tags to compressed images
+// [Compression]. If the provided [Compression] has a `Tags() Tags` method,
+// the returned [*Compressor] will append these tags to compressed images
 // when calling [*Compressor.Process].
 func Compress(compression Compression, opts ...CompressorOption) *Compressor {
-	c := &Compressor{compression: compression}
+	return CompressMany([]Compression{compression}, opts...)
+}
+
+// CompressMany returns a [*Compressor] that compresses images using the provided
+// [Compression]s. If a provided [Compression] method has a `Tags() Tags` method,
+// the returned [*Compressor] will append these tags to compressed image when
+// calling [*Compressor.Process].
+func CompressMany(compressions []Compression, opts ...CompressorOption) *Compressor {
+	c := &Compressor{compressions: compressions}
 	for _, opt := range opts {
 		opt(c)
 	}
 	return c
 }
 
-// Compress compresses an image using the configured [CompressionFunc].
-func (c *Compressor) Compress(img image.Image) (image.Image, error) {
-	compressed, err := c.compression.Compress(img)
-	if err != nil {
-		return nil, err
+// Compress compresses an image using the configured [Compression]s.
+func (c *Compressor) Compress(img image.Image) ([]image.Image, error) {
+	out := make([]image.Image, len(c.compressions))
+	for i, compression := range c.compressions {
+		compressed, err := compression.Compress(img)
+		if err != nil {
+			return nil, err
+		}
+		out[i] = internal.ToNRGBA(compressed)
 	}
-	return internal.ToNRGBA(compressed), nil
+	return out, nil
 }
 
 // Process implements [Processor]. By default, the original image will not be
@@ -84,14 +96,19 @@ func (c *Compressor) Process(ctx ProcessorContext) ([]Processed, error) {
 		return nil, err
 	}
 
-	var compressionTags Tags
-	if tagger, isTagger := c.compression.(interface{ Tags() Tags }); isTagger {
-		compressionTags = tagger.Tags()
+	out := make([]Processed, len(c.compressions))
+	for i, compression := range c.compressions {
+		var compressionTags Tags
+		if tagger, isTagger := compression.(interface{ Tags() Tags }); isTagger {
+			compressionTags = tagger.Tags()
+		}
+
+		out[i] = Processed{
+			Image:    compressed[i],
+			Tags:     pimg.Tags.With(Compressed).With(compressionTags...),
+			Original: pimg.Original,
+		}
 	}
 
-	return []Processed{{
-		Image:    compressed,
-		Tags:     pimg.Tags.With(Compressed).With(compressionTags...),
-		Original: pimg.Original,
-	}}, nil
+	return out, nil
 }

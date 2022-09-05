@@ -14,7 +14,10 @@ import (
 func TestPipeline_Run(t *testing.T) {
 	pipe := image.Pipeline{
 		image.Resize(image.DimensionMap{"sm": {360}, "md": {640}, "lg": {960}}),
-		image.Compress(compression.JPEG(75)),
+		image.CompressMany([]image.Compression{
+			compression.JPEG(75),
+			compression.JPEG(50),
+		}),
 		image.Tag(image.NewTags("foo", "bar")),
 		image.TagBy(func(p image.Processed) image.Tags {
 			suffix := "non-original"
@@ -35,8 +38,8 @@ func TestPipeline_Run(t *testing.T) {
 		t.Fatalf("run pipeline: %v", err)
 	}
 
-	if len(result.Images) != 4 {
-		t.Fatalf("pipeline should return 4 images (including the original); got %d", len(result.Images))
+	if len(result.Images) != 7 {
+		t.Fatalf("pipeline should return 7 images (including the original); got %d", len(result.Images))
 	}
 
 	if !internal.SameImages(original, result.Images[0].Image) {
@@ -67,24 +70,43 @@ func TestPipeline_Run(t *testing.T) {
 		t.Fatalf("second image should have tag %q", "compressed")
 	}
 
-	if !result.Images[1].Tags.Contains("compressor=jpeg,quality=75") {
-		t.Fatalf("second image should have tag %q", "compressor=jpeg,quality=75")
+	if !result.Images[1].Tags.Contains("compression=jpeg,quality=75") {
+		t.Fatalf("second image should have tag %q", "compression=jpeg,quality=75")
 	}
 
-	if !result.Images[3].Tags.Contains("resized") {
+	lastIdx := len(result.Images) - 1
+	secondLastIdx := len(result.Images) - 2
+
+	if !result.Images[secondLastIdx].Tags.Contains("resized") {
+		t.Fatalf("second-to-last image should have tag %q", "resized")
+	}
+
+	if !result.Images[secondLastIdx].Tags.Contains("size=lg") {
+		t.Fatalf("second-to-last image should have tag %q", "size=lg")
+	}
+
+	if !result.Images[secondLastIdx].Tags.Contains("compressed") {
+		t.Fatalf("second-to-last image should have tag %q", "compressed")
+	}
+
+	if !result.Images[secondLastIdx].Tags.Contains("compression=jpeg,quality=75") {
+		t.Fatalf("second-to-last image should have tag %q", "compression=jpeg,quality=75")
+	}
+
+	if !result.Images[lastIdx].Tags.Contains("resized") {
 		t.Fatalf("last image should have tag %q", "resized")
 	}
 
-	if !result.Images[3].Tags.Contains("size=lg") {
+	if !result.Images[lastIdx].Tags.Contains("size=lg") {
 		t.Fatalf("last image should have tag %q", "size=lg")
 	}
 
-	if !result.Images[3].Tags.Contains("compressed") {
+	if !result.Images[lastIdx].Tags.Contains("compressed") {
 		t.Fatalf("last image should have tag %q", "compressed")
 	}
 
-	if !result.Images[3].Tags.Contains("compressor=jpeg,quality=75") {
-		t.Fatalf("last image should have tag %q", "compressor=jpeg,quality=75")
+	if !result.Images[lastIdx].Tags.Contains("compression=jpeg,quality=50") {
+		t.Fatalf("last image should have tag %q", "compression=jpeg,quality=50")
 	}
 
 	for _, img := range result.Images {
@@ -130,8 +152,8 @@ func TestPipeline_Run_CompressOriginal(t *testing.T) {
 		t.Fatalf("original image should have tag %q", "compressed")
 	}
 
-	if !result.Images[0].Tags.Contains("compressor=jpeg,quality=75") {
-		t.Fatalf("original image should have tag %q", "compressor=jpeg,quality=75")
+	if !result.Images[0].Tags.Contains("compression=jpeg,quality=75") {
+		t.Fatalf("original image should have tag %q", "compression=jpeg,quality=75")
 	}
 }
 

@@ -36,5 +36,5 @@ func (jc *jpegCompression) Compress(img stdimage.Image) (stdimage.Image, error) 
 // Tags returns the tags that should be assigned to images that are compressed
 // by the JPEG compression.
 func (jc *jpegCompression) Tags() image.Tags {
-	return image.NewTags(fmt.Sprintf("compressor=jpeg,quality=%d", jc.quality))
+	return image.NewTags(fmt.Sprintf("compression=jpeg,quality=%d", jc.quality))
 }
