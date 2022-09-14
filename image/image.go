@@ -1,6 +1,7 @@
 package image
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -19,6 +20,16 @@ func (d Dimensions) Height() int {
 
 func (d Dimensions) String() string {
 	return fmt.Sprintf("[width=%d, height=%d]", d.Width(), d.Height())
+}
+
+func (d Dimensions) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Width  int `json:"width"`
+		Height int `json:"height"`
+	}{
+		Width:  d.Width(),
+		Height: d.Height(),
+	})
 }
 
 // DimensionList is a list of [Dimensions].
