@@ -22,14 +22,30 @@ func (d Dimensions) String() string {
 	return fmt.Sprintf("[width=%d, height=%d]", d.Width(), d.Height())
 }
 
-func (d Dimensions) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		Width  int `json:"width"`
-		Height int `json:"height"`
-	}{
+type JSONDimensions struct {
+	Width  int `json:"width"`
+	Height int `json:"height"`
+}
+
+func (d Dimensions) JSON() JSONDimensions {
+	return JSONDimensions{
 		Width:  d.Width(),
 		Height: d.Height(),
-	})
+	}
+}
+
+func (d Dimensions) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.JSON())
+}
+
+func (d *Dimensions) UnmarshalJSON(data []byte) error {
+	var v JSONDimensions
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	(*d)[0] = v.Width
+	(*d)[1] = v.Height
+	return nil
 }
 
 // DimensionList is a list of [Dimensions].
