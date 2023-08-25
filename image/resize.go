@@ -60,11 +60,24 @@ func Resize(dimensions DimensionProvider, opts ...ResizerOption) *Resizer {
 	}
 
 	r.dimensions = r.dimensionProvider.Dimensions()
-	stdslices.SortFunc(r.dimensions, func(a, b Dimensions) bool {
-		if a.Width() == b.Width() {
-			return a.Height() <= b.Height()
+	stdslices.SortFunc(r.dimensions, func(a, b Dimensions) int {
+		if a.Width() < b.Width() {
+			return -1
 		}
-		return a.Width() <= b.Width()
+
+		if a.Width() > b.Width() {
+			return 1
+		}
+
+		if a.Height() < b.Height() {
+			return -1
+		}
+
+		if a.Height() > b.Height() {
+			return 1
+		}
+
+		return 0
 	})
 
 	return r
